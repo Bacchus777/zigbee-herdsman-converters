@@ -351,10 +351,12 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
         dontDividePercentage = false,
         percentageReportingConfig = {min: "1_HOUR", max: "MAX", change: 10},
         voltageReportingConfig = {min: "1_HOUR", max: "MAX", change: 10},
+        lowStatusReportingConfig = undefined,
+        voltageToPercentage = undefined,
     } = args;
     const exposes: Expose[] = [];
 
-    if (args.percentage) {
+    if (percentage) {
         exposes.push(
             e
                 .numeric("battery", ea.STATE_GET)
@@ -365,12 +367,12 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
                 .withCategory("diagnostic"),
         );
     }
-    if (args.voltage) {
+    if (voltage) {
         exposes.push(
             e.numeric("voltage", ea.STATE_GET).withUnit("mV").withDescription("Reported battery voltage in millivolts").withCategory("diagnostic"),
         );
     }
-    if (args.lowStatus) {
+    if (lowStatus) {
         exposes.push(e.binary("battery_low", ea.STATE, true, false).withDescription("Empty battery indicator").withCategory("diagnostic"));
     }
 
@@ -383,18 +385,17 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
                 if (msg.data.batteryPercentageRemaining !== undefined && msg.data.batteryPercentageRemaining < 255) {
                     // Some devices do not comply to the ZCL and report a
                     // batteryPercentageRemaining of 100 when the battery is full (should be 200).
-                    const dontDividePercentage = args.dontDividePercentage;
                     let percentage = msg.data.batteryPercentageRemaining;
                     percentage = dontDividePercentage ? percentage : percentage / 2;
-                    if (args.percentage) payload.battery = precisionRound(percentage, 2);
+                    if (percentage) payload.battery = precisionRound(percentage, 2);
                 }
 
                 if (msg.data.batteryVoltage !== undefined && msg.data.batteryVoltage < 255) {
                     // Deprecated: voltage is = mV now but should be V
-                    if (args.voltage) payload.voltage = msg.data.batteryVoltage * 100;
+                    if (voltage) payload.voltage = msg.data.batteryVoltage * 100;
 
-                    if (args.voltageToPercentage) {
-                        payload.battery = batteryVoltageToPercentage(payload.voltage, args.voltageToPercentage);
+                    if (voltageToPercentage) {
+                        payload.battery = batteryVoltageToPercentage(payload.voltage, voltageToPercentage);
                     }
                 }
 
@@ -414,7 +415,7 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
                             msg.data.batteryAlarmState & (1 << 21) ||
                             msg.data.batteryAlarmState & (1 << 22) ||
                             msg.data.batteryAlarmState & (1 << 23)) > 0;
-                    if (args.lowStatus) payload.battery_low = battery1Low || battery2Low || battery3Low;
+                    if (lowStatus) payload.battery_low = battery1Low || battery2Low || battery3Low;
                 }
 
                 return payload;
@@ -445,20 +446,20 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
 
     const result: ModernExtend = {exposes, fromZigbee, toZigbee, configure: [], isModernExtend: true};
 
-    if (args.percentageReporting || args.voltageReporting) {
-        if (args.percentageReporting) {
+    if (percentageReporting || voltageReporting) {
+        if (percentageReporting) {
             result.configure.push(
                 setupConfigureForReporting("genPowerCfg", "batteryPercentageRemaining", {
-                    config: args.percentageReportingConfig,
+                    config: percentageReportingConfig,
                     access: ea.STATE_GET,
                     singleEndpoint: true,
                 }),
             );
         }
-        if (args.voltageReporting) {
+        if (voltageReporting) {
             result.configure.push(
                 setupConfigureForReporting("genPowerCfg", "batteryVoltage", {
-                    config: args.voltageReportingConfig,
+                    config: voltageReportingConfig,
                     access: ea.STATE_GET,
                     singleEndpoint: true,
                 }),
@@ -467,17 +468,17 @@ export function battery(args: BatteryArgs = {}): ModernExtend {
         result.configure.push(configureSetPowerSourceWhenUnknown("Battery"));
     }
 
-    if (args.voltageToPercentage || args.dontDividePercentage) {
+    if (voltageToPercentage || dontDividePercentage) {
         const meta: DefinitionMeta = {battery: {}};
-        if (args.voltageToPercentage) meta.battery.voltageToPercentage = args.voltageToPercentage;
-        if (args.dontDividePercentage) meta.battery.dontDividePercentage = args.dontDividePercentage;
+        if (voltageToPercentage) meta.battery.voltageToPercentage = voltageToPercentage;
+        if (dontDividePercentage) meta.battery.dontDividePercentage = dontDividePercentage;
         result.meta = meta;
     }
 
-    if (args.lowStatusReportingConfig) {
+    if (lowStatusReportingConfig) {
         result.configure.push(
             setupConfigureForReporting("genPowerCfg", "batteryAlarmState", {
-                config: args.lowStatusReportingConfig,
+                config: lowStatusReportingConfig,
                 access: ea.STATE_GET,
                 singleEndpoint: true,
             }),
@@ -1027,7 +1028,7 @@ export interface LightArgs {
     configureReporting?: boolean;
     endpointNames?: string[];
     ota?: ModernExtend["ota"];
-    levelConfig?: {disabledFeatures?: LevelConfigFeatures};
+    levelConfig?: {features?: LevelConfigFeatures};
     levelReportingConfig?: ReportingConfigWithoutAttribute;
 }
 export function light(args: LightArgs = {}): ModernExtend {
@@ -1104,7 +1105,7 @@ export function light(args: LightArgs = {}): ModernExtend {
 
     if (levelConfig) {
         // biome-ignore lint/complexity/noForEach: ignored using `--suppress`
-        lightExpose.forEach((e) => e.withLevelConfig(levelConfig.disabledFeatures ?? []));
+        lightExpose.forEach((e) => (levelConfig.features ? e.withLevelConfig(levelConfig.features) : e.withLevelConfig()));
         toZigbee.push(tz.level_config);
     }
 
@@ -1815,6 +1816,13 @@ function genericMeter(args: MeterArgs = {}) {
                 forced: args.current,
                 change: 0.05,
             },
+            current_neutral: {
+                attribute: "neutralCurrent",
+                divisor: "acCurrentDivisor",
+                multiplier: "acCurrentMultiplier",
+                forced: args.current,
+                change: 0.05,
+            },
             power_factor: {
                 attribute: "powerFactor",
                 change: 10,
@@ -1907,6 +1915,8 @@ function genericMeter(args: MeterArgs = {}) {
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.current_phase_c;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
+        delete configureLookup.haElectricalMeasurement.current_neutral;
+        // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.dc_current;
     }
     if (args.energy === false) {
@@ -1935,6 +1945,8 @@ function genericMeter(args: MeterArgs = {}) {
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.current_phase_c;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
+        delete configureLookup.haElectricalMeasurement.current_neutral;
+        // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.voltage_phase_b;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.voltage_phase_c;
@@ -1959,6 +1971,8 @@ function genericMeter(args: MeterArgs = {}) {
         delete configureLookup.haElectricalMeasurement.current_phase_b;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.current_phase_c;
+        // biome-ignore lint/performance/noDelete: ignored using `--suppress`
+        delete configureLookup.haElectricalMeasurement.current_neutral;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
         delete configureLookup.haElectricalMeasurement.voltage_phase_b;
         // biome-ignore lint/performance/noDelete: ignored using `--suppress`
@@ -2060,6 +2074,7 @@ function genericMeter(args: MeterArgs = {}) {
             e.voltage_phase_c().withAccess(ea.STATE_GET),
             e.current_phase_b().withAccess(ea.STATE_GET),
             e.current_phase_c().withAccess(ea.STATE_GET),
+            e.current_neutral().withAccess(ea.STATE_GET),
         );
         toZigbee.push(
             tz.electrical_measurement_power_phase_b,
@@ -2068,6 +2083,7 @@ function genericMeter(args: MeterArgs = {}) {
             tz.acvoltage_phase_c,
             tz.accurrent_phase_b,
             tz.accurrent_phase_c,
+            tz.accurrent_neutral,
         );
     }
 
