@@ -4,7 +4,6 @@ import * as m from "../lib/modernExtend";
 import type {DefinitionWithExtend} from "../lib/types";
 
 const defaultReporting = {min: 0, max: 300, change: 0};
-const normalReporting = {min: 0, max: 3600, change: 0};
 const rareReporting = {min: 0, max: 21600, change: 0};
 const rarestReporting = {min: 0, max: 64800, change: 0};
 const threeReporting = {min: 30, max: 1800, change: 1};
@@ -4430,7 +4429,7 @@ export const definitions: DefinitionWithExtend[] = [
                 valueMin: 400,
                 valueMax: 5000,
                 cluster: "msCO2",
-                attribute: {ID: 0x0221, type: Zcl.DataType.BOOLEAN},
+                attribute: {ID: 0x0221, type: Zcl.DataType.UINT16},
                 description: "Setting High CO2 Gas Border",
                 access: "STATE_SET",
             }),

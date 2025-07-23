@@ -310,6 +310,7 @@ export const definitions: DefinitionWithExtend[] = [
         exposes: [e.action(["single", "double", "hold", "release"])],
         extend: [
             m.battery(),
+            m.forcePowerSource({powerSource: "Battery"}),
             m.deviceAddCustomCluster("3rButtonSpecialCluster", {
                 ID: 0xff01,
                 manufacturerCode: 0x1233,
@@ -353,6 +354,7 @@ export const definitions: DefinitionWithExtend[] = [
         extend: [
             m.temperature(),
             m.humidity(),
+            m.soilMoisture(),
             m.battery(),
             m.deviceAddCustomCluster("3rSoilSpecialCluster", {
                 ID: 0xff01,
