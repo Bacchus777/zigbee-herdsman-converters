@@ -23,6 +23,13 @@ export const definitions: DefinitionWithExtend[] = [
         extend: [m.battery(), m.windowCovering({controls: ["lift"]})],
     },
     {
+        zigbeeModel: ["Sonesse2 28 WF Li-Ion Roller"],
+        model: "1245943",
+        vendor: "SOMFY",
+        description: "Sonesse2 28 WF Li-Ion roller shades",
+        extend: [m.battery(), m.windowCovering({controls: ["lift"]})],
+    },
+    {
         zigbeeModel: ["Sonesse Ultra 30 WF Li-Ion Rolle"],
         model: "SOMFY-1241752",
         vendor: "SOMFY",
@@ -34,6 +41,13 @@ export const definitions: DefinitionWithExtend[] = [
         model: "1241970",
         vendor: "SOMFY",
         description: "Sonesse 30 DC 24V roller shades",
+        extend: [m.windowCovering({controls: ["lift"]})],
+    },
+    {
+        zigbeeModel: ["Sonesse2 40 Zigbee Roller"],
+        model: "1245920",
+        vendor: "SOMFY",
+        description: "Sonesse2 40 Zigbee roller shades",
         extend: [m.windowCovering({controls: ["lift"]})],
     },
     {
@@ -86,5 +100,19 @@ export const definitions: DefinitionWithExtend[] = [
         vendor: "SOMFY",
         description: "Glydea Curtain motor Zigbee module",
         extend: [m.windowCovering({controls: ["lift"]})],
+    },
+    {
+        zigbeeModel: ["Tilt & Lift 25 WF Roller"],
+        model: "1245602",
+        vendor: "SOMFY",
+        description: "Tilt and lift blinds motor",
+        extend: [m.windowCovering({controls: ["lift", "tilt"]}), m.battery(), m.identify()],
+    },
+    {
+        zigbeeModel: ["1871215B"],
+        model: "1871215B",
+        vendor: "Somfy",
+        description: "Connected plug E type with power monitoring",
+        extend: [m.onOff(), m.electricityMeter()],
     },
 ];

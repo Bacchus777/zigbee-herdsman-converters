@@ -12,10 +12,7 @@ export const definitions: DefinitionWithExtend[] = [
         model: "ECB62-ZB",
         vendor: "ENGO",
         description: "Control box for underfloor heating system",
-        fromZigbee: [tuya.fz.datapoints],
-        toZigbee: [tuya.tz.datapoints],
-        onEvent: tuya.onEventSetTime,
-        configure: tuya.configureMagicPacket,
+        extend: [tuya.modernExtend.tuyaBase({dp: true, timeStart: "2000"})],
         exposes: [
             e.enum("pump_delay_time", ea.STATE_SET, ["OFF", "3_min", "5_min", "15_min"]).withDescription("Pump shutdown delay"),
             e.binary("zone_1", ea.STATE, "ON", "OFF").withDescription("Zigbee zone 1 heat demand"),
@@ -87,10 +84,7 @@ export const definitions: DefinitionWithExtend[] = [
         model: "EONE",
         vendor: "ENGO",
         description: "Smart thermostat",
-        fromZigbee: [tuya.fz.datapoints],
-        toZigbee: [tuya.tz.datapoints],
-        onEvent: tuya.onEventSetLocalTime,
-        configure: tuya.configureMagicPacket,
+        extend: [tuya.modernExtend.tuyaBase({dp: true, forceTimeUpdates: true, timeStart: "1970"})],
         options: [
             e.binary("expose_device_state", ea.SET, true, false).withDescription("Expose device power state as a separate property when enabled."),
         ],
@@ -317,8 +311,7 @@ export const definitions: DefinitionWithExtend[] = [
         model: "E25-230",
         vendor: "ENGO",
         description: "Smart thermostat",
-        fromZigbee: [tuya.fz.datapoints],
-        toZigbee: [tuya.tz.datapoints],
+        extend: [tuya.modernExtend.tuyaBase({dp: true})],
         exposes: [
             e.binary("state", ea.STATE_SET, "ON", "OFF").withDescription("Turn the thermostat ON/OFF"),
             e
